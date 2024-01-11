@@ -1,298 +1,602 @@
 import pygame
 import sys
 import random
+import tkinter as tk
+from tkinter import Label
+import hashlib
+
+#   TO DO 
+#   ------
+# Implement DNA (kinda done)
+# Implement more stats
+# Add predators
+# Add error handling  
+# Have program auto close when last creature dies
+
+dna_list = []
+
+class Ant:
+    age = 0
+    energy = 100
+    reproduction_ready = True
+    can_produce = False
+    temp = 2
+    all_ants_positions = []
+    reproduction_cooldown = 0
+    
+    def __init__(self, initial_x, initial_y, name, dna, parent_1, parent_2 ):
+        self.x = initial_x
+        self.y = initial_y
+        self.previous_direction = None  # Track the previous movement direction
+        self.energy = 100
+        self.name = name
+        self.dna = dna
+        self.color = self.generate_color(dna)
+        self.parent_1 = parent_1
+        self.parent_2 = parent_2
+        dna_list.append(dna)
+        self.child_count = 0
+        genes = ["A","B","C","D","E","F"]        
+
+        # 7 in 300 Chance of mutation when born
+        if random.randint(1,300) == 1:
+            modified_dna = dna[:0] + random.choice(genes) + dna[-7:]
+            self.dna = modified_dna
+        if random.randint(1,300) == 1:
+            modified_dna = dna[:-1] + random.choice(genes) + dna[6:]
+            self.dna = modified_dna
+        if random.randint(1,300) == 1:
+            modified_dna = dna[:-2] + random.choice(genes) + dna[5:]
+            self.dna = modified_dna
+        if random.randint(1,300) == 1:
+            modified_dna = dna[:-3] + random.choice(genes) + dna[4:]
+            self.dna = modified_dna
+        if random.randint(1,300) == 1:
+            modified_dna = dna[:-4] + random.choice(genes) + dna[3:]
+            self.dna = modified_dna
+        if random.randint(1,300) == 1:
+            modified_dna = dna[:-5] + random.choice(genes) + dna[2:]
+            self.dna = modified_dna
+        if random.randint(1,300) == 1:
+            modified_dna = dna[:-6] + random.choice(genes) + dna[1:]
+            self.dna = modified_dna
+
+        # Set Stats based on DNA
+        if dna[0] == 'A':
+            self.reproduction_age = 0.5
+        elif dna[0] == 'B':
+            self.reproduction_age = 1
+        elif dna[0] == 'C':
+            self.reproduction_age = 1.5
+        elif dna[0] == 'D':
+            self.reproduction_age = 2
+        elif dna[0] == 'E':
+            self.reproduction_age = 2.5
+        elif dna[0] == 'F':
+            self.reproduction_age = 3
+
+        if dna[1] == 'A':
+            self.metabolism = 1
+        elif dna[1] == 'B':
+            self.metabolism = 1.5
+        elif dna[1] == 'C':
+            self.metabolism = 2
+        elif dna[1] == 'D':
+            self.metabolism = 2.5
+        elif dna[1] == 'E':
+          self.  metabolism = 3
+        elif dna[1] == 'F':
+          self.  metabolism = 4
+
+        if dna[2] == 'A':
+            self.energy_gain = 20
+        if dna[2] == 'B':
+            self.energy_gain = 17
+        if dna[2] == 'C':
+            self.energy_gain = 15
+        if dna[2] == 'D':
+            self.energy_gain = 12
+        if dna[2] == 'E':
+            self.energy_gain = 10
+        if dna[2] == 'F':
+            self.energy_gain = 5
+
+        if dna[3] == 'A':
+            self.field_of_view_range = 1
+        if dna[3] == 'B':
+            self.field_of_view_range = 1
+        if dna[3] == 'C':
+            self.field_of_view_range = 2
+        if dna[3] == 'D':
+            self.field_of_view_range = 3
+        if dna[3] == 'E':
+            self.field_of_view_range = 4
+        if dna[3] == 'F':
+            self.field_of_view_range = 5
+
+        if dna[4] == 'A':
+            self.field_of_view_range_reproduction = 22
+        if dna[4] == 'B':
+            self.field_of_view_range_reproduction = 20
+        if dna[4] == 'C':
+            self.field_of_view_range_reproduction = 17
+        if dna[4] == 'D':
+            self.field_of_view_range_reproduction = 15
+        if dna[4] == 'E':
+            self.field_of_view_range_reproduction = 12
+        if dna[4] == 'F':
+            self.field_of_view_range_reproduction = 5
+
+        if dna[5] == 'A':
+            self.reproduction_limit = 18
+        if dna[5] == 'B':
+            self.reproduction_limit = 15
+        if dna[5] == 'C':
+            self.reproduction_limit = 14
+        if dna[5] == 'D':
+            self.reproduction_limit = 12
+        if dna[5] == 'E':
+            self.reproduction_limit = 10
+        if dna[5] == 'F':
+            self.reproduction_limit = 5
+
+        if dna[6] == 'A':
+            self.age_limit = 15
+        if dna[6] == 'B':
+            self.age_limit = 14
+        if dna[6] == 'C':
+            self.age_limit = 13
+        if dna[6] == 'D':
+            self.age_limit = 12
+        if dna[6] == 'E':
+            self.age_limit = 11
+        if dna[6] == 'F':
+            self.age_limit = 7
+
+    def move(self, direction):
+        pygame.draw.circle(screen, (0, 0, 0), (self.x * CELL_SIZE + CELL_SIZE // 2, self.y * CELL_SIZE + CELL_SIZE // 2),
+                           CELL_SIZE // 2 - 5)
+
+        if direction == "UP" and self.y > 0:
+            self.y -= 1
+        elif direction == "DOWN" and self.y < GRID_SIZE - 1:
+            self.y += 1
+        elif direction == "LEFT" and self.x > 0:
+            self.x -= 1
+        elif direction == "RIGHT" and self.x < GRID_SIZE - 1:
+            self.x += 1
+
+        self.draw()
+
+    def draw(self):
+        pygame.draw.circle(screen, self.color, (self.x * CELL_SIZE + CELL_SIZE // 2, self.y * CELL_SIZE + CELL_SIZE // 2),
+                           CELL_SIZE // 2 - 5)
+    
+    def getDirection(self):
+        global food_position
+        global ants
+
+        options = ["UP", "DOWN", "LEFT", "RIGHT"]
+        candidate_directions = []
+
+# Move to food
+        for direction in options:
+           for i in range(1, self.field_of_view_range + 1):
+               new_x, new_y = self.x, self.y
+
+               if direction == "UP":
+                   new_y -= i
+               elif direction == "DOWN":
+                   new_y += i
+               elif direction == "LEFT":
+                   new_x -= i
+               elif direction == "RIGHT":
+                   new_x += i
+
+               if (new_x, new_y) in food_position:
+                   candidate_directions.append(direction)
+       
+        if candidate_directions:
+           # If there are candidate directions, choose one randomly
+           direction = random.choice(candidate_directions)
+           new_x, new_y = self.x, self.y
+
+           if direction == "UP":
+               new_y -= 1
+           elif direction == "DOWN":
+               new_y += 1
+           elif direction == "LEFT":
+               new_x -= 1
+           elif direction == "RIGHT":
+               new_x += 1
+
+           if (new_x, new_y) in food_position:
+               food_position.remove((new_x, new_y))
+               print(f"Food consumed at position ({new_x}, {new_y})")
+               self.energy += self.energy_gain
+               return direction
+           else:
+               direction = random.choice(options)
+
+        # Move to other ant
+        if self.reproduction_ready == True:
+            for direction in options:
+                for i in range(1, self.field_of_view_range_reproduction + 1):
+                   new_x, new_y = self.x, self.y
+
+                   if direction == "UP":
+                       new_y -= i
+                   elif direction == "DOWN":
+                       new_y += i
+                   elif direction == "LEFT":
+                       new_x -= i
+                   elif direction == "RIGHT":
+                       new_x += i
+                   candidate_directions = []
+                   if (new_x, new_y) in Ant.all_ants_positions:
+                       candidate_directions.append(direction)
+
+        if candidate_directions:
+           # If there are candidate directions, choose one randomly
+           direction = random.choice(candidate_directions)
+           new_x, new_y = self.x, self.y
+
+           if direction == "UP":
+               new_y -= 1
+           elif direction == "DOWN":
+               new_y += 1
+           elif direction == "LEFT":
+               new_x -= 1
+           elif direction == "RIGHT":
+               new_x += 1
+
+           if (new_x, new_y) in food_position:
+               food_position.remove((new_x, new_y))
+               print(f"Food consumed at position ({new_x}, {new_y})")
+               self.energy += self.energy_gain
+                    
+        else:
+           direction = random.choice(options)
+
+        return direction
+
+    def consumeFood(self, direction):
+        global food_position
+
+        # Calculate the new position after moving in the specified direction
+        new_x, new_y = self.x, self.y
+
+        if direction == "UP":
+            new_y -= 1
+        elif direction == "DOWN":
+            new_y += 1
+        elif direction == "LEFT":
+            new_x -= 1
+        elif direction == "RIGHT":
+            new_x += 1
+
+        # Check if the new position has food
+        if (new_x, new_y) in food_position:
+            # Remove the consumed food from the list
+            food_position.remove((new_x, new_y))
+            print(f"Food consumed at position ({new_x}, {new_y})")
+            self.energy += self.energy_gain
+
+        # Move the ant in the specified direction
+        self.move(direction)
+
+    def die(self):
+        print(f"Ant at position ({self.x}, {self.y}) has died.")
+        ants.remove(self)
+    
+    def generate_color(self, gene):
+        hashed = hashlib.sha256(gene.encode()).hexdigest()
+
+        # Extract three segments of 8 characters each and convert to decimal
+        r = int(hashed[:8], 16) % 256
+        g = int(hashed[8:16], 16) % 256
+        b = int(hashed[16:24], 16) % 256
+
+        return (r, g, b)
+
+     
+class Food:
+    def __init__(self, initial_x, initial_y):
+        self.x = initial_x
+        self.y = initial_y
+
+    def draw(self):
+        screen.blit(FOOD_ICON, (self.x * CELL_SIZE - 22.5 , self.y * CELL_SIZE - 22.5))
+
+    def drop_seed(self):
+        global food_position
+
+        # Generate positions for seeds in a 1-tile radius
+        seed_positions = [
+            (self.x, self.y - 2),
+            (self.x, self.y + 2),
+            (self.x - 2, self.y),
+            (self.x + 2, self.y) ]
+
+        for seed_pos in seed_positions:
+            if seed_pos not in food_position:
+                x, y = seed_pos
+                if 0 <= x < GRID_SIZE and 0 <= y < GRID_SIZE:
+                    food_position.append(seed_pos)
+
+    def draw_seed(self, seed_pos):
+        pygame.draw.circle(screen, (255, 255, 0), (seed_pos[0] * CELL_SIZE + CELL_SIZE // 2, seed_pos[1] * CELL_SIZE + CELL_SIZE // 2),
+                           CELL_SIZE // 4)
+
+
+def is_click_inside_any_ant(click_pos, ants):
+    for ant in ants:
+        ant_rect = pygame.Rect(ant.x * CELL_SIZE, ant.y * CELL_SIZE, CELL_SIZE, CELL_SIZE)
+        if ant_rect.collidepoint(click_pos):
+            return ant
+    return None
+
+def display_ant_stats_tkinter(selected_ant):
+    if selected_ant is not None:
+        stats_window = tk.Tk()
+        stats_window.title(f"{selected_ant} Stats")
+                
+        ant_position_label = Label(stats_window, text=f"Name: ({selected_ant.name})")
+        ant_position_label.pack()
+        
+        ant_position_label = Label(stats_window, text=f"Parents: ({selected_ant.parent_1}, {selected_ant.parent_2})")
+        ant_position_label.pack()
+
+        ant_position_label = Label(stats_window, text=f"Position: ({selected_ant.x}, {selected_ant.y})")
+        ant_position_label.pack()
+        updated_age = round(selected_ant.age, 2)
+        ant_age_label = Label(stats_window, text=f"Age: {updated_age}")
+        ant_age_label.pack()
+        ant_dna_label = Label(stats_window, text=f"DNA: {selected_ant.dna}")
+        ant_dna_label.pack()
+        ant_energy_label = Label(stats_window, text=f"Energy: {selected_ant.energy} ")
+        ant_energy_label.pack()
+
+        ant_energy_label = Label(stats_window, text=f"Age till sterile: {selected_ant.reproduction_limit} ")
+        ant_energy_label.pack()
+        ant_energy_label = Label(stats_window, text=f"Start reproducing age: {selected_ant.reproduction_age} ")
+        ant_energy_label.pack()
+        ant_energy_label = Label(stats_window, text=f"Metabolism: {selected_ant.metabolism} ")
+        ant_energy_label.pack()
+        ant_energy_label = Label(stats_window, text=f"Energy Gain: {selected_ant.energy_gain} ")
+        ant_energy_label.pack()
+        ant_energy_label = Label(stats_window, text=f"Food detection range: {selected_ant.field_of_view_range} ")
+        ant_energy_label.pack()
+        ant_energy_label = Label(stats_window, text=f"Mate detection range: {selected_ant.field_of_view_range_reproduction} ")
+        ant_energy_label.pack()
+        ant_energy_label = Label(stats_window, text=f"Number of children: {selected_ant.child_count} ")
+        ant_energy_label.pack()
+        
+
+        def check_pygame_events():
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+
+            stats_window.after(10, check_pygame_events)
+
+        check_pygam
+e_events()
+        stats_window.mainloop()
+
+def list_has_neighbors(lst, threshold=1):
+    seen = {}
+    for i, value in enumerate(lst):
+        for j, existing_value in seen.items():
+            if isinstance(value, tuple) and isinstance(existing_value, tuple):
+                if all(abs(v1 - v2) <= threshold for v1, v2 in zip(value, existing_value)):
+                    return True, j, i
+        seen[i] = value
+    return False, None, None
 
 # Constants
-number_of_creatures = 1
-number_of_plants = 16
-GRID_SIZE = 32
-CELL_SIZE = 20
-WIDTH, HEIGHT = GRID_SIZE * CELL_SIZE, GRID_SIZE * CELL_SIZE
+GRID_SIZE = 14
+CELL_SIZE = 30
 WHITE = (255, 255, 255)
-GREEN = (0, 255, 0)
 RED = (255, 0, 0)
-YELLOW = (255, 255, 0)
-CMA = [300, 320, 340, 360, 380, 400]
-CREATURE_MAX_AGE = random.choice(CMA)
-HUNGER_DECREASE_PER_TURN = 1
-a = 0 
+GREEN = (0, 255, 0)
+FOOD_ICON = pygame.image.load('food_icon.png')
+
+# Game variables
+turn_counter = 0
+ant  = Ant(10, 10, "dave",  "ABCDEFA", "NA", "NA")
+ant2 = Ant(10, 10, "mel",   "BCDEFAB", "NA", "NA")
+ant3 = Ant(10, 10, "frank", "CDEFABC", "NA", "NA")
+ant4 = Ant(10, 10, "jill",  "DEFABCD", "NA", "NA")
+ant5 = Ant(10, 10, "paul",  "EFABCDE", "NA", "NA")
+ant6 = Ant(10, 10, "gomez", "FABCDEF", "NA", "NA")
+
+new_ant = ''
+food_position = []
+num_child_count = []
+ants = [ant, ant2, ant3, ant4, ant5, ant6]
+
+#spawn initial food
+food1 = Food(4, 6)
+food2 = Food(8, 8)
+food3 = Food(13,3)
+food4 = Food(14,14)
+food5 = Food(9, 12)
+food6 = Food(4, 7)
+food7 = Food(13, 5)
+food8 = Food(2, 3)
+food9 = Food(3, 16)
+
+food1Pos = food1.x, food1.y
+food2Pos = food2.x, food2.y
+food3Pos = food3.x, food3.y
+food4Pos = food4.x, food4.y
+food5Pos = food5.x, food5.y
+food6Pos = food6.x, food6.y
+food7Pos = food7.x, food7.y
+food8Pos = food8.x, food8.y
+food9Pos = food9.x, food9.y
+
+food_position.append(food1Pos)
+food_position.append(food2Pos)
+food_position.append(food3Pos)
+food_position.append(food4Pos)
+food_position.append(food5Pos)
+food_position.append(food6Pos)
+food_position.append(food7Pos)
+food_position.append(food8Pos)
+food_position.append(food9Pos)
 
 pygame.init()
+screen = pygame.display.set_mode((GRID_SIZE * CELL_SIZE, GRID_SIZE * CELL_SIZE))
+pygame.display.set_caption("Life")
 
-DAY_DURATION = 5
-day_counter = 0
-
-# Font setup
-font = pygame.font.Font(None, 24)
-
-def display_day_counter():
-    text_day = font.render(f"Days: {day_counter}", True, (0, 0, 0))
-    text_plants = font.render(f"Plants: {count_entities('plant')}", True, (0, 0, 0))
-    text_creatures = font.render(f"Creatures: {count_entities('creature')}", True, (0, 0, 0))
-    
-    screen.blit(text_day, (10, 10))
-    screen.blit(text_plants, (10, 50))
-    screen.blit(text_creatures, (10, 90))
-
-
-def count_entities(entity_type):
-    count = sum(1 for row in grid for cell in row if cell[0] == entity_type)
-    return count
-
-# Create the grid
-grid = [[('empty', 0) for _ in range(GRID_SIZE)] for _ in range(GRID_SIZE)]
-
-# Set up the display
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Life Simulation")
-
-def spawn_creatures():
-    for _ in range(number_of_creatures):
-        row, col = random.randint(0, GRID_SIZE - 1), random.randint(0, GRID_SIZE - 1)
-        while grid[row][col][0] != 'empty':
-            row, col = random.randint(0, GRID_SIZE - 1), random.randint(0, GRID_SIZE - 1)
-        grid[row][col] = ('creature', {'age': 0, 'hunger': 100})
-
-def move_creatures():
-    for row in range(GRID_SIZE):
-        for col in range(GRID_SIZE):
-            if grid[row][col][0] == 'creature':
-                # Check for walls in a 1-tile radius
-                near_wall = False
-                for i in range(max(0, row - 1), min(GRID_SIZE, row + 2)):
-                    for j in range(max(0, col - 1), min(GRID_SIZE, col + 2)):
-                        if grid[i][j][0] == 'wall':
-                            near_wall = True
-                            break
-
-                if near_wall:
-                    # Move creature away from the wall for the next 5 turns
-                    if grid[row][col][1]['avoid_wall'] < 5:
-                        # Find the wall direction
-                        wall_direction = ''
-                        if row == 0:
-                            wall_direction = 'down'
-                        elif row == GRID_SIZE - 1:
-                            wall_direction = 'up'
-                        elif col == 0:
-                            wall_direction = 'right'
-                        elif col == GRID_SIZE - 1:
-                            wall_direction = 'left'
-
-                        # Move creature away from the wall in the opposite direction
-                        if wall_direction == 'up':
-                            move_row, move_col = -1, 0
-                        elif wall_direction == 'down':
-                            move_row, move_col = 1, 0
-                        elif wall_direction == 'left':
-                            move_row, move_col = 0, -1
-                        elif wall_direction == 'right':
-                            move_row, move_col = 0, 1
-
-                        # Increment the counter for turns to avoid the wall
-                        grid[row][col][1]['avoid_wall'] += 1
-                    else:
-
-                        # Reset the counter and move randomly or towards the radius around the middle
-                        move_row, move_col = move_towards_radius(row, col, radius=5)
-                        grid[row][col] = ('creature', {'age': grid[row][col][1]['age'] + 1, 'hunger': grid[row][col][1]['hunger'], 'avoid_wall': 0})
-                else:
-
-                    # Move randomly or towards the radius around the middle
-                    move_row, move_col = move_towards_radius(row, col, radius=5)
-
-                new_row, new_col = row + move_row, col + move_col
-                if 0 <= new_row < GRID_SIZE and 0 <= new_col < GRID_SIZE and grid[new_row][new_col][0] == 'empty':
-                    grid[new_row][new_col] = ('creature', {'age': grid[row][col][1]['age'] + 1, 'hunger': grid[row][col][1]['hunger'], 'avoid_wall': 0})
-                    grid[row][col] = ('empty', 0)
-
-def move_towards_radius(row, col, radius):
-    middle_row, middle_col = GRID_SIZE // 2, GRID_SIZE // 2
-    distance_to_middle = max(abs(row - middle_row), abs(col - middle_col))
-
-    # Check if the creature is surrounded by plants
-    if grid[row][col][0] == 'creature' and all(grid[i][j][0] == 'plant' for i in range(row - 1, row + 2) for j in range(col - 1, col + 2) if 0 <= i < GRID_SIZE and 0 <= j < GRID_SIZE):
-        # Move towards the middle (plants' likely origin)
-        move_row = middle_row - row
-        move_col = middle_col - col
-    else:
-        # Move randomly
-        move_row = random.choice([-1, 0, 1])
-        move_col = random.choice([-1, 0, 1])
-
-    return move_row, move_col
-
-
-def creature_interaction():
-    for row in range(GRID_SIZE):
-        for col in range(GRID_SIZE):
-            if grid[row][col][0] == 'creature':
-
-                food_positions = []
-
-                # Check for food (plants or seeds) in a 2-tile radius
-                for i in range(max(0, row - 2), min(GRID_SIZE, row + 3)):
-                    for j in range(max(0, col - 2), min(GRID_SIZE, col + 3)):
-                        if grid[i][j][0] == 'plant':
-                            food_positions.append((i, j))
-
-                # Check if there are any food sources
-                if food_positions:
-
-                    # Randomly choose one of the available food sources
-                    chosen_food_position = random.choice(food_positions)
-
-                    # Move creature one tile closer to the chosen food
-                    move_row = 1 if chosen_food_position[0] > row else -1 if chosen_food_position[0] < row else 0
-                    move_col = 1 if chosen_food_position[1] > col else -1 if chosen_food_position[1] < col else 0
-
-                    new_row, new_col = row + move_row, col + move_col
-                    if 0 <= new_row < GRID_SIZE and 0 <= new_col < GRID_SIZE and grid[new_row][new_col][0] == 'empty':
-                        grid[new_row][new_col] = ('creature', {'age': grid[row][col][1]['age'] + 1, 'hunger': grid[row][col][1]['hunger']})
-                        grid[row][col] = ('empty', 0)
-
-                    elif 0 <= new_row < GRID_SIZE and 0 <= new_col < GRID_SIZE and (grid[new_row][new_col][0] == 'plant'):
-                        # Eat the food and increase hunger
-                        grid[row][col][1]['hunger'] = min(grid[row][col][1]['hunger'] + 10, 100)
-                        grid[new_row][new_col] = ('empty', 0)
-                        return  # Only eat one food source per turn
-                    
-def spawn_plants():
-    for _ in range(number_of_plants):
-        row, col = random.randint(0, GRID_SIZE - 1), random.randint(0, GRID_SIZE - 1)
-        while grid[row][col][0] != 'empty':
-            row, col = random.randint(0, GRID_SIZE - 1), random.randint(0, GRID_SIZE - 1)
-        grid[row][col] = ('plant', 0)
-
-def draw_grid():
-    for row in range(GRID_SIZE):
-        for col in range(GRID_SIZE):
-            #pygame.draw.rect(screen, WHITE, (col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE), 1)
-
-            # Check for the tuple ('plant', age)
-            if grid[row][col][0] == 'plant':
-                age = grid[row][col][1]
-                color = GREEN
-                pygame.draw.circle(screen, color, (col * CELL_SIZE + CELL_SIZE // 2, row * CELL_SIZE + CELL_SIZE // 2), CELL_SIZE // 2)
-
-            elif grid[row][col][0] == 'seed':  
-                pygame.draw.circle(screen, YELLOW, (col * CELL_SIZE + CELL_SIZE // 2, row * CELL_SIZE + CELL_SIZE // 2), CELL_SIZE // 2)
-
-            elif grid[row][col][0] == 'creature':  
-                age = grid[row][col][1]['age']
-                hunger = grid[row][col][1]['hunger']
-                color = RED
-
-                # Draw creature rectangle
-                pygame.draw.rect(screen, color, (col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE))
-
-                # Display age and hunger text
-                font_size = 20  # Adjust the font size as needed
-                font = pygame.font.Font(None, font_size)
-                age_text = font.render(f"Age: {int(age/4)}", True, (0, 0, 0))
-                hunger_text = font.render(f"Food: {hunger}", True, (0, 0, 0))
-
-                # Position the text below the creature
-                text_x = col * CELL_SIZE + CELL_SIZE // 2 - font_size
-                text_y = row * CELL_SIZE + CELL_SIZE
-
-                screen.blit(age_text, (text_x, text_y))
-                screen.blit(hunger_text, (text_x, text_y + font_size + 2))
-
-
-
-def simulate_life():
-    global a
-    if a < 1:
-        spawn_plants()
-        a += 1
-    start_time = pygame.time.get_ticks()
-    move_creatures()
-
-    creature_interaction()
-    for row in range(GRID_SIZE):
-        for col in range(GRID_SIZE):
-            if grid[row][col][0] == 'creature':
-                # Age the creature and increase hunger
-                age = grid[row][col][1]['age'] + 1
-                hunger = grid[row][col][1]['hunger'] - HUNGER_DECREASE_PER_TURN  # Decrease hunger over time
-                grid[row][col] = ('creature', {'age': age, 'hunger': max(0, hunger), 'avoid_wall': 0})
-
-                # Check for lifespan condition
-                if age >= CREATURE_MAX_AGE:
-                    grid[row][col] = ('empty', 0)  # Creature dies
-                elif hunger <= 0:
-                    grid[row][col] = ('empty', 0)  # Creature dies
-
-                # Reproduction when hunger reaches 100
-                elif hunger > 80 and age >= 10:
-                    spawn_reproduced_creature(row, col)
-                    # Decrease hunger after reproduction to 40
-                    grid[row][col][1]['hunger'] -= 60  # Adjust the value as needed
-
-            elif grid[row][col][0] == 'plant':
-                # Age the plant every 5 seconds
-                current_time = pygame.time.get_ticks()
-                if (current_time - start_time) // 1000 % 5 == 0:
-                    age = grid[row][col][1] + 1
-                    grid[row][col] = ('plant', age)
-
-                    if age >= random.randint(20, 30):
-                        grid[row][col] = ('empty', 0)
-                    else:
-                        if age % 5 == 0 and age <= 10:
-                            seed_row, seed_col = row + random.randint(-1, 1), col + random.randint(-1, 1)
-
-                            if 0 <= seed_row < GRID_SIZE and 0 <= seed_col < GRID_SIZE and grid[seed_row][seed_col][0] == 'empty':
-                                grid[seed_row][seed_col] = ('seed', 0)
-
-            elif grid[row][col][0] == 'seed':
-                age = grid[row][col][1] + 1  # Increment age
-                grid[row][col] = ('seed', age)  # Update seed age
-
-                if 9 <= age <= 12:  # Check if the seed age is between 9 and 12
-                    grid[row][col] = ('plant', 0)  # Convert seed to plant
-
-def spawn_reproduced_creature(row, col):
-    
-    # Spawn a new creature adjacent to the parent creature
-    for i in range(-1, 2):
-        for j in range(-1, 2):
-            new_row, new_col = row + i, col + j
-            if 0 <= new_row < GRID_SIZE and 0 <= new_col < GRID_SIZE and grid[new_row][new_col][0] == 'empty':
-                grid[new_row][new_col] = ('creature', {'age': 0, 'hunger': 60, 'avoid_wall': 0, 'reproduction_delay': 10})
-                return  # Stop spawning once a valid position is found
-
-# Main game loop
+# Game loop
 running = True
-
-# Initial setup
-spawn_plants()
-spawn_creatures()
-
-# Time tracking for day counter
-turn_count = 0
+paused = False
 
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
-    # Simulation logic
-    simulate_life()
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_SPACE:
+                paused = not paused
 
-    # Increment day counter every DAY_DURATION turns
-    turn_count += 1
-    if turn_count % DAY_DURATION == 0:
-        day_counter += 1
+        elif event.type == pygame.MOUSEBUTTONDOWN:
+            # Check if any ant is clicked
+            clicked_ant = is_click_inside_any_ant(pygame.mouse.get_pos(), ants)
+            if clicked_ant is not None:
+                display_ant_stats_tkinter(clicked_ant)
 
-    # Draw the grid and day counter
-    screen.fill(WHITE)
-    draw_grid()
-    display_day_counter()
+    if not paused:
+ 
+        screen.fill((0, 0, 0))
 
-    # Update the display
-    pygame.display.flip()
+        for x in range(0, GRID_SIZE * CELL_SIZE, CELL_SIZE):
+            pygame.draw.line(screen, WHITE, (x, 0), (x, GRID_SIZE * CELL_SIZE))
+        for y in range(0, GRID_SIZE * CELL_SIZE, CELL_SIZE):
+            pygame.draw.line(screen, WHITE, (0, y), (GRID_SIZE * CELL_SIZE, y))
 
-    # Control the frame rate
-    pygame.time.Clock().tick(5)
+        # Each turn
+        if turn_counter % 1 == 0:
+
+            # Draw food based on the food_position list
+            for food_pos in food_position:
+                food = Food(food_pos[0], food_pos[1])
+                food.draw()
+            print(f"\nPlant_pos: {food_position}")
+
+            ant_counter = 1
+            has_neighbors, parent_1, parent_2 = list_has_neighbors(Ant.all_ants_positions)
+
+            for i in ants:
+                # Reproduction
+                try:
+                    if i.age > i.reproduction_age and i.reproduction_ready and i == parent_1_object and i.reproduction_cooldown == 0:
+                        i.can_produce = True
+                    else:
+                        i.can_produce = False
+                except:
+                    pass
+
+            if has_neighbors:
+                parent_1_object = ants[int(parent_1)]
+                parent_2_object = ants[int(parent_2)]
+                
+                for i in ants:
+                    if i.parent_1 == parent_1_object or parent_2_object:
+                        i.can_produce == False
+                    if parent_2 == parent_1_object or parent_2_object:
+                        i.can_produce == False
+
+                dna = ''
+                dna1 = [parent_1_object.dna[0], parent_2_object.dna[0]]
+                dna += random.choice(dna1)
+
+                dna2 = [parent_1_object.dna[1], parent_2_object.dna[1]]
+                dna += random.choice(dna2)
+
+                dna3 = [parent_1_object.dna[2], parent_2_object.dna[2]]
+                dna += random.choice(dna3)
+                
+                dna4 = [parent_1_object.dna[3], parent_2_object.dna[3]]
+                dna += random.choice(dna4)
+
+                dna5 = [parent_1_object.dna[4], parent_2_object.dna[4]]
+                dna += random.choice(dna5)
+
+                dna6 = [parent_1_object.dna[5], parent_2_object.dna[5]]
+                dna += random.choice(dna6)
+
+                dna7 = [parent_1_object.dna[6], parent_2_object.dna[6]]
+                dna += random.choice(dna7)
+
+                if has_neighbors:
+                    if parent_1_object.can_produce:
+                        # Generate a unique variable name
+                        new_ant_var_name = f"new_ant_{ant_counter}"
+                        globals()[new_ant_var_name] = Ant(parent_1_object.x, parent_2_object.y, random.randint(0,200), dna, parent_1_object.name, parent_2_object.name)
+                        ants.append(globals()[new_ant_var_name])
+                        ant_counter += 1
+                        parent_1_object.energy -= 50
+                        parent_1_object.child_count += 1
+                        parent_2_object.child_count += 1
+
+    
+                        print(f"{new_ant_var_name} spawned!")
+                        Ant.temp += 1
+                        parent_1_object.reproduction_cooldown = 1
+                        parent_2_object.reproduction_cooldown = 1
+    
+                        print (parent_1_object.name)
+                        print (parent_1_object.dna)
+                        print (parent_2_object.name)
+                        print (parent_2_object.dna)
+                        has_neighbors = False
+    
+            x = 0
+            Ant.all_ants_positions = []
+            
+            for i in ants:
+                if i.energy <= 0 or i.age > i.age_limit:
+                    i.die()
+                    num_child_count.append(i.child_count)
+                i.move(ant.getDirection())
+                
+                ant_position = i.x, i.y
+                Ant.all_ants_positions.append(ant_position)
+                i.age += 0.1
+                i.energy -= i.metabolism
+                i.consumeFood(i.getDirection())
+                print(f"{i.name} energy: {i.energy}")
+                print(f"{i.name} pos: {ant_position}")
+                print(Ant.all_ants_positions)
+                x += 1
+
+        if turn_counter % 10 == 0:
+            food.drop_seed()
+            food2.drop_seed()
+            food1.drop_seed()
+            food3.drop_seed()
+            food4.drop_seed()
+            food5.drop_seed()
+            food6.drop_seed()
+            food7.drop_seed()
+            food8.drop_seed()
+            food9.drop_seed()
+            
+        
+        if turn_counter % 25 == 0:
+            for i in ants:
+                i.reproduction_cooldown = 0
+        turn_counter += 1
+        has_neighbors = False
+
+        print(dna_list)
+        pygame.display.flip()
+        pygame.time.delay(10)
+
+pygame.quit()
